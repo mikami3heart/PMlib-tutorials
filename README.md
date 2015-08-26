@@ -8,6 +8,7 @@ Please note that the material is work-in-progress state.
 Tutorial slides (PDF):
 - Tutorial-slide1-overview.pdf : PMlib overview
 - Tutorial-slide2-installation.pdf : PMlib hands-on. installation & test run.
+- Tutorial-xtra-slides.pdf
 
 Tutorial related files:
 - PMlib-package-tutorial.tar.gz  : PMlib installation package based on v4.1.2
