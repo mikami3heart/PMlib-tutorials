@@ -9,10 +9,9 @@ Tutorial slides (PDF):
 - Tutorial-slide1-overview.pdf : PMlib overview
 - Tutorial-slide2-installation.pdf : PMlib hands-on. installation & test run.
 
-Hands-on source program files:
-- PMlib-master.304.tar.gz  : PMlib package
+Tutorial related files:
+- PMlib-package-tutorial.tar.gz  : PMlib installation package based on v4.1.2
 - PMlib-doxygen.tar.gz 	 : PMlib user API and internal specification
 - scripts.tar.gz	 : A collection of shell scripts for hands-on
-- tutorial.src.tar.gz	 : A collection of example program source files
 
-updated 2015/01/25
+updated 2015/08/25
