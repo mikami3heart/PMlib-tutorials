@@ -14,4 +14,4 @@ Tutorial related files:
 - PMlib-doxygen.tar.gz 	 : PMlib user API and internal specification
 - scripts.tar.gz	 : A collection of shell scripts for hands-on
 
-updated 2015/08/25
+updated 2015/08/26
