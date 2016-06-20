@@ -5,6 +5,8 @@ About this repository
 This repository contains PMlib tutorial material for fresh users.
 Please note that the material is work-in-progress state.
 
+https://github.com/mikami3heart/PMlib-tutorials
+
 Tutorial slides (PDF):
 - Tutorial-slide1-overview.pdf : PMlib overview
 - Tutorial-slide2-installation.pdf : PMlib hands-on. installation & test run.
@@ -22,4 +24,4 @@ http://avr-aics-riken.github.io/PMlib/
 PMlib development version is available at:
 https://github.com/mikami3heart/PMlib
 
-updated 2015/10/08
+updated 2016/6/20
