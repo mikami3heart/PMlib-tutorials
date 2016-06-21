@@ -10,11 +10,13 @@ https://github.com/mikami3heart/PMlib-tutorials
 Tutorial slides (PDF):
 - Tutorial-slide1-overview.pdf : PMlib overview
 - Tutorial-slide2-installation.pdf : PMlib hands-on. installation & test run.
-- Tutorial-xtra-slides.pdf
 
 Tutorial related files:
-- PMlib-doxygen.tar.gz 	 : PMlib user API and internal specification
-- scripts.tar.gz	 : A collection of shell scripts for hands-on
+- PMlib-5.0-API-html.tar.gz	: PMlib function API and internal specification
+- PMlib-5.0-user-manual.pdf	: PMlib user manual
+- scripts.K.tar.gz	 : A collection of K shell scripts for hands-on
+- scripts.intel.tar.gz
+- scripts.mac.tar.gz
 
 Please utilize the material here with the PMlib package.
 
