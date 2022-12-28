@@ -4,7 +4,7 @@
 :lang: jp
 :rev: 0.1.0
 :revdate: 2016年10月26日
-
+:source-highlighter: rouge
 :toc:
 
 理化学研究所 計算科学研究機構
@@ -12,64 +12,64 @@
 
 == PMlibとは
 
-* アプリケーションの計算性能をモニターするソフトウエアライブラリ::
+* アプリケーションの計算性能をモニターするソフトウエアライブラリ
   * 注目する区間の性能統計情報を簡単に測定・レポートする。
   * Cpp言語、Fortran言語に対応 。
   * Linux系OSをもつコンピュータの上で使える。:::
-    * 京コンピュータ・FX100:
-    * Intel Xeon系サーバ・PC
-    * Apple Macbook
-  * オープンソース。:::
-    * パッケージ公開リポジトリ:::
-      * http://avr-aics-riken.github.io/PMlib/
-    * 必要な前提ソフトウエア環境:::
-      * Linux OS, Cpp, C, Fortranコンパイラ
-      * (オプションに応じて)MPIライブラリ、PAPIライブラリ、OTFライブラリ
+    ** 京コンピュータ・FX100
+    ** Intel Xeon系サーバ・PC
+    ** Apple Macbook
+  * オープンソース。
+    ** パッケージ公開リポジトリ
+      *** http://avr-aics-riken.github.io/PMlib/
+    ** 必要な前提ソフトウエア環境
+      *** Linux OS, Cpp, C, Fortranコンパイラ
+      *** (オプションに応じて)MPIライブラリ、PAPIライブラリ、OTFライブラリ
 
 == 計算性能のモニターとは?
 
 * 注目する区間を指定して性能統計情報を蓄積・記録すること
 
-* 測定区間は少数の属性を持つ::
-  * ラベル:任意の名称 ”ここ”とか”そこ”とか
-  * 測定する計算量の種類: 「演算量」、「通信量」など:::
-     浮動小数点演算量、データ移動量、その他HW固有の統計量がいくつか選べる
-  * 排他性:「排他的」か「非排他的」:::
-     他の区間とカブっていないかという意味
+* 測定区間は少数の属性を持つ
+  ** ラベル:任意の名称 ”ここ”とか”そこ”とか
+  ** 測定する計算量の種類: 「演算量」、「通信量」など
+     *** 浮動小数点演算量、データ移動量、その他HW固有の統計量がいくつか選べる
+  ** 排他性:「排他的」か「非排他的」
+     *** 他の区間とカブっていないかという意味
 
-* 測定する計算量をどう選択・算出するか?::
-  * PMlibがHWPC値を自動測定する方法
-  * ユーザが明示的に申告する方法
+* 測定する計算量をどう選択・算出するか?
+  ** PMlibがHWPC値を自動測定する方法
+  ** ユーザが明示的に申告する方法
 
 == PMlibの利用方法
 
 . PMlibライブラリをインストールする
-. アプリケーション中の測定区間を決める::
+. アプリケーション中の測定区間を決める
   * ソースプログラム中の注目箇所にPMlib APIを追加
 . アプリケーションをコンパイルしてPMlibとリンクする
-. アプリケーションを実行する::
+. アプリケーションを実行する
   * 実行時に性能統計情報がレポートされる
 . 性能統計レポートを確認評価する
 
 == PMlib基本APIの一覧
 
 |===
-| 関数名(Cpp)        | 関数名(Fortran)   | 機能                | 呼び出し位置と回 数 |  引数  |
+| 関数名(Cpp)        | 関数名(Fortran)   | 機能                | 呼び出し位置と回 数 |  引数  
 
-| initialize()       |f_pm_initialize()    | PMlib 全体の初期化  | 冒頭■一回  | (1)測定区間数 |
-| setProperties()    |f_pm_setproperties() | 測定区間のラベル化  | 任意■各区間一回 | ⑴ラベル、（2)測定対象タイプ、（3)排他 指定 |
-| start()            |f_pm_start()         | 測定の開始          | 任意(startとstopで ペア） | (1)ラベル|
-| stop()             |f_pm_stop()          | 測定の停止          | 任意(startとstopで ペア） | (1)ラベル、（2)計算量、（3)計算のタスク 数|
-| print()            |f_pm_print()         | 測定区間毎の基本 統計結果表示 | 測定終了時■一回 | (1)出カファイルポインタ、（2)ホスト名、 (3)任意のコメント、（4)区間の表示順 序指定 |
-| printDetail()      |f_pm_printdetail()   | MPIランク毎の詳細 性能情報の表示 | 測定終了時■一回 | (1)出カファイルポインタ、（2)記号説明 の表示、（3)区間の表示順序指定 |
+| initialize()       |f_pm_initialize()    | PMlib 全体の初期化  | 冒頭■一回  | (1)測定区間数 
+| setProperties()    |f_pm_setproperties() | 測定区間のラベル化  | 任意■各区間一回 | ⑴ラベル、（2)測定対象タイプ、（3)排他 指定 
+| start()            |f_pm_start()         | 測定の開始          | 任意(startとstopで ペア） | (1)ラベル
+| stop()             |f_pm_stop()          | 測定の停止          | 任意(startとstopで ペア） | (1)ラベル、（2)計算量、（3)計算のタスク 数
+| print()            |f_pm_print()         | 測定区間毎の基本 統計結果表示 | 測定終了時■一回 | (1)出カファイルポインタ、（2)ホスト名、 (3)任意のコメント、（4)区間の表示順 序指定 
+| printDetail()      |f_pm_printdetail()   | MPIランク毎の詳細 性能情報の表示 | 測定終了時■一回 | (1)出カファイルポインタ、（2)記号説明 の表示、（3)区間の表示順序指定 
 |===
 
 == PMlibを利用するプログラムの構成例(Fortran)
 
 |===
-|  元のソース    |   PMlib組み込み後のソース |
+|  元のソース    |   PMlib組み込み後のソース
 
-|
+a|
 [source,fortran]
 ----
 program main
@@ -77,13 +77,13 @@ program main
 call mykernel() 
 end
 ----
-|
+a|
 [source,fortran]
 ----
 program main
 ! 初期設定
-call f_pm_ini9alize (nWatch)
-call f_pm_setproper9es ("Koko!" icalc, iexcl)
+call f_pm_initialize (nWatch)
+call f_pm_setproperties ("Koko!" icalc, iexcl)
 ! 測定区間
 call f_pm_start ("Koko!")
 call mykernel (msize,n,a,b,c)
@@ -93,62 +93,63 @@ call f_pm_print ("", isort)
 call f_pm_printdetail ("", ilegend, isort)
 end
 ----
-|
+
 |===
 
 == PMlibを利用するプログラムの構成例(Cpp)
 
 |===
-| 元のソース | PMlib組み込み後のソース |
+| 元のソース | PMlib組み込み後のソース 
 
-|
+a|
 [source,cpp]
 ----
 int main(int argc, char *argv[])
 {
-// 注目箇所
+/* 注目箇所 */
 mykernel();
 return 0;
 }
 ----
-|
+a|
 [source,cpp]
 ----
-// PMlibヘッダー
+/* PMlibヘッダー */
 #include <PerfMonitor.h>
 using namespace pm_lib;
 PerfMonitor PM;
 int main(int argc, char *argv[])
 {
-// 初期設定
-PM.initalize();
-PM.setProper9es("Koko!", PM.CALC);
-// 測定区間
+/* 初期設定 */
+PM.initialize();
+PM.setProperties("Koko!", PM.CALC);
+/* 測定区間 */
 PM.start("Koko!");
 mykernel();
 PM.stop ("Koko!");
-// レポート出力
+/* レポート出力 */
 PM.print(stdout, "", "");
 PM.printDetail(stdout);
 return 0;
 }
 ----
-|
+|===
 
 == PMlibの出力情報
 
-. 、基本レポート::
+. 、基本レポート
   * 各測定区間のプロセスあたり平均性能統計値
-    * 時間:各区間の平均時間、呼び出し回数、累積経過時間
-    *  計算量:呼び出し1回あたりの量、合計量、速度
-    * 区間を登録順または経過時間順にソート出力
+    ** 時間:各区間の平均時間、呼び出し回数、累積経過時間
+    **  計算量:呼び出し1回あたりの量、合計量、速度
+    ** 区間を登録順または経過時間順にソート出力
   * ジョブ全体での総合性能
-. 、詳細プロファイル::
+. 、詳細プロファイル
   * 各MPIプロセス毎のプロファイルを出力
   * (オプション)各MPIプロセス毎のHWPCイベント統計量
-    * HWPCイベントグループを環境変数で指定
-    * プロセスがOpenMPスレッドを発生した場合、各スレッドの計 算量は元プロセスに合算する。
+    ** HWPCイベントグループを環境変数で指定
+    ** プロセスがOpenMPスレッドを発生した場合、各スレッドの計 算量は元プロセスに合算する。
 . 、(オプション)ポスト処理用性能トレースファイル
+
 
 == 基本レポート例 (HWPC自動測定モード
 
@@ -215,35 +216,35 @@ Sections total job             7.272e-01      -Exclusive CALC sections- 1.465e+1
     Sections total job             3.120e-01     -Exclusive COMM sections- 1.920e+11           615.36 GB/sec
 ....
 
-== ? 
+== ?
 
 |===
-^| 以降のスライドはコンピュータシステム毎に |
-^| 別れた内容になっています。 |
-^| Intel環境編 |
-^| 京・FX100編 |
-^| Mac・OSX編 |
-^| 適切なものを選んでお読みください |
+^| 以降のスライドはコンピュータシステム毎に
+^| 別れた内容になっています。
+^| Intel環境編
+^| 京・FX100編
+^| Mac・OSX編
+^| 適切なものを選んでお読みください
 |===
 
 == 10分+でできるPMlibのインストールと利用😚
 
 |===
-^| Intel環境編 |
-^| (Intel サーバ w/ Intelコンパイラ+Intel MPI) |
+^| Intel環境編
+^| (Intel サーバ w/ Intelコンパイラ+Intel MPI)
 |===
 
 == PMlibのインストールと利用実行
 
 * PMlibのインストール
-  * PMlibパッケージの入手
-  *  PMlibのインストール
+  ** PMlibパッケージの入手
+  ** PMlibのインストール
 
 * PMlibの利用実行
-  * 例題プログラムの作成(Cpp言語で作成)
-  * 例題プログラムへのPMlibの追加(ソースプログラムの編集)
-  * 例題プログラムをコンパイルしてPMlibをリンクする
-  * 例題プログラムを実行して、PMlibのレポートを確認する
+  ** 例題プログラムの作成(Cpp言語で作成)
+  ** 例題プログラムへのPMlibの追加(ソースプログラムの編集)
+  ** 例題プログラムをコンパイルしてPMlibをリンクする
+  ** 例題プログラムを実行して、PMlibのレポートを確認する
 
 
 * `(注)ここではPMlibのインストールと例題プログラムの利用実行が同じ種類のIntel Xeon CPU上で行われることを想定している。`
@@ -252,14 +253,14 @@ Sections total job             7.272e-01      -Exclusive CALC sections- 1.465e+1
 == PMlibパッケージの入手(共通)
 
 * パッケージ公開リポジトリ
-  * http://avr-aics-riken.github.io/PMlib/
+  ** http://avr-aics-riken.github.io/PMlib/
  
 image::download.png[ソフトウェアをダウンロードするためのGitHubページを示す画像]
 
 * ダウンロードしたファイル名は avr-aics-riken-PMlib-*.tar.gz
-  * (*の部分はバージョンにより変わる)
+  ** (*の部分はバージョンにより変わる)
 * ダウンロードしたファイルをインストール先のコンピュータに転送する。手持ちのPCへインストールする場合は、もちろん転送不要。
-  * 以降の例では ${HOME}/tmp/ 下に転送したと仮定
+  ** 以降の例では ${HOME}/tmp/ 下に転送したと仮定
 
 == PMlibパッケージの展開(共通)
 
@@ -286,19 +287,19 @@ $ export PMLIB_DIR INSTALL_DIR
 
 == PMlibのインストール Intel環境
 
-* Intel環境用のインストールスクリプト例は以下に提供されている::
- `$ SCRIPTS=${PMLIB_DIR}/doc/scripts/Intel/`
+* Intel環境用のインストールスクリプト例は以下に提供されている
+ ** `$ SCRIPTS=${PMLIB_DIR}/doc/scripts/Intel/`
 
 * アプリケーションの種類により、PMlib「1プロセス版」か「MPI版」かのどちらかを使用するので、両方ともインストールする。
 * Intelコンパイラ、Intel MPI、PAPIライブラリはシステムによってインストールされているパスが異なる。PMlibインストール用スクリプトで設定されているパスが正しいか確認して、必要であれば修正する。
-* 「1プロセス版」のスクリプト ${SCRIPTS}/x.make-pmlib-intel-serial.sh::
-  `N行目INTEL_DIR=/usr/local/intel/composer_xe_2013`
-  `N行目PAPI_DIR=/usr/local/papi/papi-5.3.2/intel`
+* 「1プロセス版」のスクリプト ${SCRIPTS}/x.make-pmlib-intel-serial.sh
+  ** `N行目INTEL_DIR=/usr/local/intel/composer_xe_2013`
+  ** `N行目PAPI_DIR=/usr/local/papi/papi-5.3.2/intel`
 
-* 「Intel MPI版」のスクリプト ${SCRIPTS}/x.make-pmlib-intel-impi.sh::
-  `N行目 INTEL_DIR=/usr/local/intel/composer_xe_2013`
-  `N行目 MPI_DIR=/usr/local/intel/impi/4.1.0.024`
-  `N行目 PAPI_DIR=/usr/local/papi/papi-5.3.2/intel`
+* 「Intel MPI版」のスクリプト ${SCRIPTS}/x.make-pmlib-intel-impi.sh
+  ** `N行目 INTEL_DIR=/usr/local/intel/composer_xe_2013`
+  ** `N行目 MPI_DIR=/usr/local/intel/impi/4.1.0.024`
+  ** `N行目 PAPI_DIR=/usr/local/papi/papi-5.3.2/intel`
 
 == PMlibのインストール Intel環境
 
