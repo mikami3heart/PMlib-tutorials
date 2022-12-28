@@ -152,7 +152,7 @@ return 0;
 
 == 基本レポート例 (HWPC自動測定モード
 
-...
+....
 # PMlib Basic Report -------------------------------------------------------
 Timing Statistics Report from PMlib version 5.0.3
 Linked PMlib supports: MPI, OpenMP, HWPC, OTF
@@ -179,11 +179,11 @@ Subsection Y      :        3   3.127e-01 31.85 4.06e-03 1.042e-01        1.568e+
 Sections per process           7.272e-01     -Exclusive CALC sections- 3.663e+10            50.37 Gflops
 ------------------+----------+----------------------------------------+----------------------------
 Sections total job             7.272e-01      -Exclusive CALC sections- 1.465e+11           201.47 Gflops
-...
+....
 
 == 基本レポート例 (ユーザ申告モード)
 
-...
+....
 # PMlib Basic Report -------------------------------------------------------
 
     Timing Statistics Report from PMlib version 5.0.3
@@ -213,7 +213,7 @@ Sections total job             7.272e-01      -Exclusive CALC sections- 1.465e+1
     ------------------+----------+----------------------------------------+----------------------------
     Sections total job             4.161e-01     -Exclusive CALC sections- 7.360e+10           176.87 Gflops
     Sections total job             3.120e-01     -Exclusive COMM sections- 1.920e+11           615.36 GB/sec
-...
+....
 
 == ? 
 
