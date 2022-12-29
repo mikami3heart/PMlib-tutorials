@@ -218,21 +218,28 @@ Sections total job             7.272e-01      -Exclusive CALC sections- 1.465e+1
 
 == ?
 
-|===
-^| 以降のスライドはコンピュータシステム毎に
-^| 別れた内容になっています。
-^| Intel環境編
-^| 京・FX100編
-^| Mac・OSX編
-^| 適切なものを選んでお読みください
-|===
+[.text-center]
+以降のスライドはコンピュータシステム毎に
+[.text-center]
+別れた内容になっています。
+[.text-center]
+Intel環境編
+[.text-center]
+京・FX100編
+[.text-center]
+Mac・OSX編
+[.text-center]
+適切なものを選んでお読みください
 
-== 10分+でできるPMlibのインストールと利用😚
+== Intel
 
-|===
-^| Intel環境編
-^| (Intel サーバ w/ Intelコンパイラ+Intel MPI)
-|===
+[.text-center]
+10分+でできるPMlibのインストールと利用😚
+[.text-center]
+Intel環境編
+[.text-center]
+(Intel サーバ w/ Intelコンパイラ+Intel MPI)
+
 
 == PMlibのインストールと利用実行
 
@@ -423,6 +430,7 @@ struct matrix {
 |===
 | *  元の主プログラム部分 | * PMlibを追加した主プログラム部分
 
+a|
 [source,cpp]
 ----
 /* ヘッダー */
@@ -446,7 +454,7 @@ return 0;
 }
 ----
 
-|
+a|
 [source,cpp]
 ----
 /* ヘッダー追加 */
@@ -498,7 +506,7 @@ $ file ./a.out
   ** 次に環境変数を指定して実行する。(HWPCによる自動測定モード)
 
 |===
-|
+a|
 [source,bash]
 ----
 $ cp ${SCRIPTS}/x.run-intel-serial.sh ./
@@ -506,7 +514,7 @@ $ vi ./x.run-intel-serial.sh
 $ bsub < ./x.run-intel-serial.sh
 ----
 
-|
+a|
 .  通常実行(ユーザー申告モード)
 `./a.out`
 .   HWPCによる自動測定モード
@@ -757,6 +765,7 @@ struct matrix {
   int nsize;
 } matrix;
 ----
+|===
 
 == 例題プログラムへのPMlibの追加
 
@@ -880,7 +889,7 @@ $ ./a.out
 
 *  ソースプログラムにOpenMP指示行を追加
 
-|====
+|===
 a|
 [source,cpp]
 ----
@@ -1284,13 +1293,19 @@ $ ./x.run-mac-serial.sh
 |===
 |
 doc/PMlib.pdf
+
 doc/tutorial/Tutorial-slide1-overview.pdf
+
 doc/tutorial/Tutorial-slide2-installation.pdf
+
 doc/tutorial/PMlib-Getting-Started.pdf
 
 |
 PMlib利用説明書
+
 講習会用資料1
+
 講習会用資料2
+
 簡易版利用ガイド(本資料)
 |===
