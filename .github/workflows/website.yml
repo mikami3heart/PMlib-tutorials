@@ -9,7 +9,7 @@ jobs:
     steps:
       - name: Install asciidoctor
         run: |
-          sudo apt install ruby-asciidoctor
+          sudo apt install ruby-asciidoctor asciidoctor
       - name: Checkout the repostory
         uses: actions/checkout@v3
       - name: build slides
