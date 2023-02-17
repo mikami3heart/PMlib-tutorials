@@ -1,0 +1,26 @@
+name: Website
+# Runs when there is a push, pull or manually
+# triggered from the Actions tab  
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build-website:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install asciidoctor
+        run: |
+          sudo apt install ruby-asciidoctor asciidoctor
+      - name: Checkout the repostory
+        uses: actions/checkout@v3
+      - name: build slides
+        run: |
+          asciidoctor PMlib-Getting-Started.adoc
+          mkdir presentation
+          mv PMlib-Getting-Started.html presentation/index.html
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./presentation
+          publish_branch: gh-pages
+          keep_files: true

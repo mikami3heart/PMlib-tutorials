@@ -1,0 +1,1479 @@
+= 10分でわかるPMlib 😚
+:author: 三上 和徳
+:encoding: utf-8
+:lang: jp
+:rev: 0.1.0
+:revdate: 2016年10月26日
+:source-highlighter: rouge
+:stylesheet: slides.css
+:sectnums:
+:nofooter: yes
+:skip-front-matter: yes
+
+理化学研究所 計算科学研究機構
+可視化技術研究チーム
+
+[#1]
+== PMlibとは
+
+* アプリケーションの計算性能をモニターするソフトウエアライブラリ
+  * 注目する区間の性能統計情報を簡単に測定・レポートする。
+  * Cpp言語、Fortran言語に対応 。
+  * Linux系OSをもつコンピュータの上で使える。:::
+    ** 京コンピュータ・FX100
+    ** Intel Xeon系サーバ・PC
+    ** Apple Macbook
+  * オープンソース。
+    ** パッケージ公開リポジトリ
+      *** http://avr-aics-riken.github.io/PMlib/
+    ** 必要な前提ソフトウエア環境
+      *** Linux OS, Cpp, C, Fortranコンパイラ
+      *** (オプションに応じて)MPIライブラリ、PAPIライブラリ、OTFライブラリ
+
+<<2,→>>
+
+[#2]
+== 計算性能のモニターとは?
+
+* 注目する区間を指定して性能統計情報を蓄積・記録すること
+
+* 測定区間は少数の属性を持つ
+  ** ラベル:任意の名称 ”ここ”とか”そこ”とか
+  ** 測定する計算量の種類: 「演算量」、「通信量」など
+     *** 浮動小数点演算量、データ移動量、その他HW固有の統計量がいくつか選べる
+  ** 排他性:「排他的」か「非排他的」
+     *** 他の区間とカブっていないかという意味
+
+* 測定する計算量をどう選択・算出するか?
+  ** PMlibがHWPC値を自動測定する方法
+  ** ユーザが明示的に申告する方法
+
+<<1,←>><<3,→>>
+
+[#3]
+== PMlibの利用方法
+
+. PMlibライブラリをインストールする
+. アプリケーション中の測定区間を決める
+  * ソースプログラム中の注目箇所にPMlib APIを追加
+. アプリケーションをコンパイルしてPMlibとリンクする
+. アプリケーションを実行する
+  * 実行時に性能統計情報がレポートされる
+. 性能統計レポートを確認評価する
+
+<<2,←>><<4,→>>
+
+[#4]
+== PMlib基本APIの一覧
+
+|===
+| 関数名(Cpp)        | 関数名(Fortran)   | 機能                | 呼び出し位置と回 数 |  引数  
+
+| initialize()       |f_pm_initialize()    | PMlib 全体の初期化  | 冒頭■一回  | (1)測定区間数 
+| setProperties()    |f_pm_setproperties() | 測定区間のラベル化  | 任意■各区間一回 | ⑴ラベル、（2)測定対象タイプ、（3)排他 指定 
+| start()            |f_pm_start()         | 測定の開始          | 任意(startとstopで ペア） | (1)ラベル
+| stop()             |f_pm_stop()          | 測定の停止          | 任意(startとstopで ペア） | (1)ラベル、（2)計算量、（3)計算のタスク 数
+| print()            |f_pm_print()         | 測定区間毎の基本 統計結果表示 | 測定終了時■一回 | (1)出カファイルポインタ、（2)ホスト名、 (3)任意のコメント、（4)区間の表示順 序指定 
+| printDetail()      |f_pm_printdetail()   | MPIランク毎の詳細 性能情報の表示 | 測定終了時■一回 | (1)出カファイルポインタ、（2)記号説明 の表示、（3)区間の表示順序指定 
+|===
+
+<<3,←>><<5,→>>
+
+[#5]
+== PMlibを利用するプログラムの構成例(Fortran)
+
+|===
+|  元のソース    |   PMlib組み込み後のソース
+
+a|
+[source,fortran]
+----
+program main
+!  注目箇所
+call mykernel() 
+end
+----
+a|
+[source,fortran]
+----
+program main
+! 初期設定
+call f_pm_initialize (nWatch)
+call f_pm_setproperties ("Koko!" icalc, iexcl)
+! 測定区間
+call f_pm_start ("Koko!")
+call mykernel (msize,n,a,b,c)
+call f_pm_stop ("Koko!", fops, ncall)
+! レポート出力
+call f_pm_print ("", isort)
+call f_pm_printdetail ("", ilegend, isort)
+end
+----
+
+|===
+
+<<4,←>><<6,→>>
+
+[#6]
+== PMlibを利用するプログラムの構成例(Cpp)
+
+|===
+| 元のソース | PMlib組み込み後のソース 
+
+a|
+[source,cpp]
+----
+int main(int argc, char *argv[])
+{
+/* 注目箇所 */
+mykernel();
+return 0;
+}
+----
+a|
+[source,cpp]
+----
+/* PMlibヘッダー */
+#include <PerfMonitor.h>
+using namespace pm_lib;
+PerfMonitor PM;
+int main(int argc, char *argv[])
+{
+/* 初期設定 */
+PM.initialize();
+PM.setProperties("Koko!", PM.CALC);
+/* 測定区間 */
+PM.start("Koko!");
+mykernel();
+PM.stop ("Koko!");
+/* レポート出力 */
+PM.print(stdout, "", "");
+PM.printDetail(stdout);
+return 0;
+}
+----
+|===
+
+<<5,←>><<7,→>>
+
+[#7]
+== PMlibの出力情報
+
+. 、基本レポート
+  * 各測定区間のプロセスあたり平均性能統計値
+    ** 時間:各区間の平均時間、呼び出し回数、累積経過時間
+    **  計算量:呼び出し1回あたりの量、合計量、速度
+    ** 区間を登録順または経過時間順にソート出力
+  * ジョブ全体での総合性能
+. 、詳細プロファイル
+  * 各MPIプロセス毎のプロファイルを出力
+  * (オプション)各MPIプロセス毎のHWPCイベント統計量
+    ** HWPCイベントグループを環境変数で指定
+    ** プロセスがOpenMPスレッドを発生した場合、各スレッドの計 算量は元プロセスに合算する。
+. 、(オプション)ポスト処理用性能トレースファイル
+
+<<6,←>><<8,→>>
+
+[#8]
+== 基本レポート例 (HWPC自動測定モード
+
+....
+# PMlib Basic Report -------------------------------------------------------
+Timing Statistics Report from PMlib version 5.0.3
+Linked PMlib supports: MPI, OpenMP, HWPC, OTF
+Host name : vsp01
+Date      : 2016/06/19 : 15:26:50
+Mrs. Kobe
+Parallel Mode:  Hybrid (4 processes x 4 threads)
+The environment variable HWPC_CHOOSER=FLOPS is provided.
+
+Total execution time            = 9.848690e-01 [sec]
+Total time of measured sections = 9.816217e-01 [sec]
+
+Exclusive sections statistics per process and total job.
+Inclusive sections are marked with (*)
+
+Section           |  call    |     accumulated time[sec]              | [hardware counter byte counts]
+Label             |          |   avr     avr[%]    sdv   avr/call     |      avr       sdv   speed
+------------------+----------+----------------------------------------+----------------------------
+First section     :        1   1.039e-01 10.59 1.32e-03 1.039e-01        4.807e+09 1.89e+06 46.26 Gflops
+Second section(*) :        1   8.412e-01 85.70 4.72e-03 8.412e-01        5.226e+09 1.79e+06 6.21 Gflops(*)
+Subsection X      :        3   3.106e-01 31.64 9.48e-04 1.035e-01        1.614e+10 3.24e+06 51.97 Gflops
+Subsection Y      :        3   3.127e-01 31.85 4.06e-03 1.042e-01        1.568e+10 2.73e+06 50.14 Gflops
+------------------+----------+----------------------------------------+----------------------------
+Sections per process           7.272e-01     -Exclusive CALC sections- 3.663e+10            50.37 Gflops
+------------------+----------+----------------------------------------+----------------------------
+Sections total job             7.272e-01      -Exclusive CALC sections- 1.465e+11           201.47 Gflops
+....
+
+<<7,←>><<9,→>>
+
+[#9]
+== 基本レポート例 (ユーザ申告モード)
+
+....
+# PMlib Basic Report -------------------------------------------------------
+
+    Timing Statistics Report from PMlib version 5.0.3
+    Linked PMlib supports: MPI, OpenMP, HWPC, OTF
+    Host name : vsp01
+    Date      : 2016/06/19 : 15:28:19
+    Mrs. Kobe
+    Parallel Mode:    Hybrid (4 processes x 4 threads)
+    The environment variable HWPC_CHOOSER is not provided. No HWPC report.
+
+    Total execution time            = 9.795189e-01 [sec]
+    Total time of measured sections = 9.816882e-01 [sec]
+
+    Exclusive sections statistics per process and total job.
+    Inclusive sections are marked with (*)
+
+    Section           |   call   |      accumulated time[sec]             | [user defined counter values ]
+    Label             |          |    avr   avr[%]   sdv     avr/call     |       avr     sdv   speed
+    ------------------+----------+----------------------------------------+----------------------------
+    First section     :        1   1.043e-01 10.62 1.47e-03 1.043e-01        4.000e+09 0.00e+00 38.35 Gflops
+    Second section(*) :        1   8.420e-01 85.77 6.86e-03 8.420e-01        1.960e+10 0.00e+00 23.28 Gflops(*)
+    Subsection X      :        3   3.120e-01 31.78 3.28e-03 1.040e-01        4.800e+10 0.00e+00 153.84 GB/sec
+    Subsection Y      :        3   3.118e-01 31.76 2.72e-03 1.039e-01        1.440e+10 0.00e+00 46.18 Gflops
+    ------------------+----------+----------------------------------------+----------------------------
+    Sections per process           4.161e-01     -Exclusive CALC sections- 1.840e+10            44.22 Gflops
+    Sections per process           3.120e-01     -Exclusive COMM sections- 4.800e+10           153.84 GB/sec
+    ------------------+----------+----------------------------------------+----------------------------
+    Sections total job             4.161e-01     -Exclusive CALC sections- 7.360e+10           176.87 Gflops
+    Sections total job             3.120e-01     -Exclusive COMM sections- 1.920e+11           615.36 GB/sec
+....
+
+<<8,←>><<10,→>>
+
+[#10]
+== ?
+
+[.text-center]
+以降のスライドはコンピュータシステム毎に
+[.text-center]
+別れた内容になっています。
+[.text-center]
+Intel環境編
+[.text-center]
+京・FX100編
+[.text-center]
+Mac・OSX編
+[.text-center]
+適切なものを選んでお読みください
+
+<<9,←>><<11,→>>
+
+[#11]
+== Intel
+
+[.text-center]
+10分+でできるPMlibのインストールと利用😚
+[.text-center]
+Intel環境編
+[.text-center]
+(Intel サーバ w/ Intelコンパイラ+Intel MPI)
+
+<<10,←>><<12,→>>
+
+[#12]
+== PMlibのインストールと利用実行
+
+* PMlibのインストール
+  ** PMlibパッケージの入手
+  ** PMlibのインストール
+
+* PMlibの利用実行
+  ** 例題プログラムの作成(Cpp言語で作成)
+  ** 例題プログラムへのPMlibの追加(ソースプログラムの編集)
+  ** 例題プログラムをコンパイルしてPMlibをリンクする
+  ** 例題プログラムを実行して、PMlibのレポートを確認する
+
+
+* `(注)ここではPMlibのインストールと例題プログラムの利用実行が同じ種類のIntel Xeon CPU上で行われることを想定している。`
+* `(注)ここではIntelコンパイラ+Intel MPIのソフトウエア環境を想定している。GNUコンパイラ を用いた場合、あるいはOpenMPIを用いた場合などのインストール例についてはパッケージに含まれるINSTALLファイルを参照`
+
+<<11,←>><<13,→>>
+
+[#13]
+== PMlibパッケージの入手(共通)
+
+* パッケージ公開リポジトリ
+  ** http://avr-aics-riken.github.io/PMlib/
+ 
+image::download.png[ソフトウェアをダウンロードするためのGitHubページを示す画像]
+
+* ダウンロードしたファイル名は avr-aics-riken-PMlib-*.tar.gz
+  ** (*の部分はバージョンにより変わる)
+* ダウンロードしたファイルをインストール先のコンピュータに転送する。手持ちのPCへインストールする場合は、もちろん転送不要。
+  ** 以降の例では ${HOME}/tmp/ 下に転送したと仮定
+
+<<12,←>><<14,→>>
+
+[#14]
+== PMlibパッケージの展開(共通)
+
+* インストール先のコンピュータ上で、転送したパッケージを展開する
+* 展開したディレクトリにシンボリックリンクと、パスの環境変数を設定する。
+* 以下の例ではログイン後ホームに pmlib ディレクトリを作って、その下に転送したパッケージのファイルを展開する。
+
+[source,bash]
+----
+$ mkdir pmlib
+$ cd pmlib
+$ tar –zxf ${HOME}/tmp/avr-aics-riken-PMlib-*.tar.gz
+$ ls –go
+drwxr-xr-x 10 4096 2016-06-21 15:13 avr-aics-riken-PMlib-7d4884d
+
+$ ln –s avr-aics-riken-PMlib-* PMlib
+$ ls –go
+lrwxrwxrwx 1 12 2016-06-21 15:15 PMlib -> avr-aics-riken-PMlib-7d4884d
+
+$ PMLIB_DIR=${PWD}/PMlib           # PMlibパッケージを展開したディレクトリ
+$ INSTALL_DIR=${PWD}/install_dir   # PMlibのインストール先ディレクトリ
+$ export PMLIB_DIR INSTALL_DIR
+----
+
+<<13,←>><<15,→>>
+
+[#15]
+== PMlibのインストール Intel環境
+
+* Intel環境用のインストールスクリプト例は以下に提供されている
+ ** `$ SCRIPTS=${PMLIB_DIR}/doc/scripts/Intel/`
+
+* アプリケーションの種類により、PMlib「1プロセス版」か「MPI版」かのどちらかを使用するので、両方ともインストールする。
+* Intelコンパイラ、Intel MPI、PAPIライブラリはシステムによってインストールされているパスが異なる。PMlibインストール用スクリプトで設定されているパスが正しいか確認して、必要であれば修正する。
+* 「1プロセス版」のスクリプト ${SCRIPTS}/x.make-pmlib-intel-serial.sh
+  ** `N行目INTEL_DIR=/usr/local/intel/composer_xe_2013`
+  ** `N行目PAPI_DIR=/usr/local/papi/papi-5.3.2/intel`
+
+* 「Intel MPI版」のスクリプト ${SCRIPTS}/x.make-pmlib-intel-impi.sh
+  ** `N行目 INTEL_DIR=/usr/local/intel/composer_xe_2013`
+  ** `N行目 MPI_DIR=/usr/local/intel/impi/4.1.0.024`
+  ** `N行目 PAPI_DIR=/usr/local/papi/papi-5.3.2/intel`
+
+<<14,←>><<16,→>>
+
+[#16]
+== PMlibのインストール Intel環境
+
+* インストールスクリプトを2つ順に実行
+[source,bash]
+----
+$ ${SCRIPTS}/x.make-intel-serial.sh  # 「1プロセス版」PMlibのインストール
+$ ${SCRIPTS}/x.make-intel-impi.sh    # 「Intel MPI版」PMlibのインストール
+----
+
+* 以下のファイルがインストールされた事を確認する
+[source,bash]
+----
+$ ls –go ${INSTALL_DIR}
+drwxr-xr-x 3 102 6 19 17:51 bin
+drwxr-xr-x 6 204 6 19 17:51 doc
+drwxr-xr-x 7 238 6 19 17:51 include
+drwxr-xr-x 4 136 6 19 17:51 lib
+drwxr-xr-x 7 238 6 19 17:51 share
+
+$ ls –go ${INSTALL_DIR}/lib
+-rw-r--r-- 1 145784 5 27 17:15 libPM.a         # 「1プロセス版」PMlibライブラリ
+-rw-r--r-- 1 472104 6 19 17:51 libPMmpi.a      # 「Intel MPI版」PMlibライブラリ
+----
+
+* 以上でPMlibインストール終了!
+
+<<15,←>><<17,→>>
+
+[#17]
+== 例題プログラムの作成(Cpp版)
+
+* 適当なディレクトリ ${MY_SRC} の下にプログラム mxm.cpp を作成する
+* N次の正方行列の積を計算するプログラム
+  ** 主プログラム:関数1と関数2を呼び出して行列積の計算を行う。
+  ** 関数1:正方行列[A]、[B]の各要素を値1.0で初期化する
+  ** 関数2:行列積[C]=[A][B]を計算する
+  ** シリアルプログラム(MPI不要、OpenMP不要)
+
+[source,bash]
+---
+$ MY_SRC=${HOME}/pmlib/mysrc
+$ mkdir -p ${MY_SRC}
+$ cd ${MY_SRC}
+---
+
+* 自分でソースを書いてももちろん良い vi mxm.cpp
+*  手早く進みたい場合はパッケージのプログラム例をコピーしても良い
+
+`$ vi mxm.cpp`
+あるいは
+`$ cp –p ${PMLIB_DIR}/doc/src_tutorial/mxm.cpp ./`
+
+<<16,←>><<18,→>>
+
+[#18]
+== 行列積ソースプログラム例 Cpp
+
+|===
+| |
+
+a|
+[source,cpp]
+----
+#include <stdio.h>
+#include <string.h>
+#include "matrix.h"
+void init2d();
+void mxm2d();
+/* 主プログラム部分 */
+int main()
+{
+init2d();
+mxm2d();
+return 0;
+}
+void init2d()
+{
+  int i, j, nsize;
+  matrix.nsize = MATSIZE;
+  nsize = matrix.nsize;
+  for (i=0; i<nsize; i++){
+    for (j=0; j<nsize; j++){
+      matrix.a2d[i][j] = (double)(i+j)/(double)nsize;
+      matrix.b2d[i][j] = 1.0-matrix.a2d[i][j];
+      matrix.c2d[i][j] = 0.0;
+    }
+  }
+}
+----
+
+a|
+[source,cpp]
+----
+void mxm2d()
+{
+  int i, j, k, nsize;
+  double c1;
+  nsize = matrix.nsize;
+  for (i=0; i<nsize; i++){
+    for (j=0; j<nsize; j++){
+      c1 = 0.0;
+      for (k=0; k<nsize; k++){
+        c1 = c1 +
+          matrix.a2d[k][i] * matrix.b2d[j][k];
+      }
+      matrix.c2d[j][i] = c1;
+    }
+  }
+}
+----
+
+ヘッダーファイル matrix.h の内容
+
+[source,cpp]
+----
+#define MATSIZE 1000
+struct matrix {
+  double a2d[MATSIZE][MATSIZE];
+  double b2d[MATSIZE][MATSIZE];
+  double c2d[MATSIZE][MATSIZE];
+  int nsize;
+} matrix;
+----
+|===
+
+<<17,←>><<19,→>>
+
+[#19]
+== 例題プログラムへのPMlibの追加
+
+|===
+| *  元の主プログラム部分 | * PMlibを追加した主プログラム部分
+
+a|
+[source,cpp]
+----
+/* ヘッダー */
+
+
+int main()
+{
+
+/* 初期設定 */
+
+
+/* 測定区間1 */
+init2d();
+
+
+/* 測定区間2 */
+mxm2d();
+
+/* レポートを出力 */
+return 0;
+}
+----
+
+a|
+[source,cpp]
+----
+/* ヘッダー追加 */
+#include <PerfMonitor.h>
+using namespace pm_lib;
+PerfMonitor PM;
+int main()
+{
+PM.initialize();
+/* 初期設定 */
+PM.setProperties("A:init2d",PM.CALC);
+PM.setProperties("B:mxm2d",PM.CALC);
+/* 測定区間1 */
+PM.start("A:init2d");
+init2d();
+PM.stop("A:init2d");
+/* 測定区間2 */
+PM.start("B:mxm2d");
+mxm2d();
+PM.stop("B:mxm2d");
+/* レポートを出力 */
+PM.print(stdout, "","");
+PM.printDetail(stdout);
+return 0;
+}
+----
+|===
+
+<<18,←>><<20,→>>
+
+[#20]
+== コンパイル Intel環境
+
+* 例題プログラムをコンパイルしてPMlibをリンクするスクリプト例
+ ** x.compile-cpp-intel-serial.sh
+ ** コンパイルを開始する前にスクリプトの内容を確認する
+ ** コンパイルが終了すると実行プログラム a.out が生成される
+
+[source,bash]
+----
+$ ${SCRIPTS}/x.compile-cpp-intel-serial.sh
+$ file ./a.out
+./a.out: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), dynamically linked (uses shared libs), for GNU/Linux 2.6.18, not stripped
+----
+
+<<19,←>><<21,→>>
+
+[#21]
+== 例題プログラムの実行 Intel環境
+
+* プログラムの実行方法(ジョブスクリプトによるジョブ投入)
+  ** (注)Intelサーバではプログラムをバッチジョブで実行する事が多く、バッチジョブ管理ソフトの種類・構成には様々なパターンがある。以下はLSFの場合の例であるが、利用するシステムに合わせて実行ジョブスクリプトの指示行部分を適宜修正する。
+  ** ジョブスクリプト中のプログラムパス(MY_SRC)設定が正しいことを確認。
+  ** 最初はジョブスクリプトをそのまま実行する。(ユーザー申告モード)
+  ** 次に環境変数を指定して実行する。(HWPCによる自動測定モード)
+
+|===
+a|
+[source,bash]
+----
+$ cp ${SCRIPTS}/x.run-intel-serial.sh ./
+$ vi ./x.run-intel-serial.sh
+$ bsub < ./x.run-intel-serial.sh
+----
+
+a|
+.  通常実行(ユーザー申告モード)
+`./a.out`
+.   HWPCによる自動測定モード
+`export HWPC_CHOOSER=FLOPS`
+`./a.out`
+|===
+
+*  実行結果標準出力でPMlibの基本レポート・詳細レポートを確認
+
+<<20,←>><<22,→>>
+
+[#22]
+== 例題プログラムへのOpenMP指示行の追加
+
+* ソースプログラムにOpenMP指示行を追加
+
+|===
+| |
+
+a|
+[source,cpp]
+----
+void init2d()
+{
+  int i, j, nsize;
+  matrix.nsize = MATSIZE;
+  nsize = matrix.nsize;
+  #pragma omp parallel for private(i,j)
+  for (i=0; i<nsize; ipp){
+    for (j=0; j<nsize; jpp){
+      matrix.a2d[i][j] = (double)(i+j)/(double)nsize;
+      matrix.b2d[i][j] = 1.0-matrix.a2d[i][j];
+      matrix.c2d[i][j] = 0.0;
+    }
+  }
+}
+----
+
+a|
+[source,cpp]
+----
+void mxm2d()
+{
+  int i, j, k, nsize;
+  double c1;
+  nsize = matrix.nsize;
+  #pragma omp parallel for private(i,j,k,c1)
+  for (i=0; i<nsize; ipp){
+    for (j=0; j<nsize; jpp){
+      c1 = 0.0;
+      for (k=0; k<nsize; kpp){
+      c1 = c1 +
+      matrix.a2d[k][i] * matrix.b2d[j][k];
+    }
+    ...以下略...
+----
+|===
+
+<<21,←>><<23,→>>
+
+
+[#23]
+== 例題プログラムの再コンパイルと実行 Intel環境
+
+* ログインノード上で再度コンパイル
+
+`${SCRIPTS}/x.compile-cpp-intel-serial.sh`
+
+* 環境変数を追加・変更して再実行
+  ** ジョブスクリプトで測定条件を変更して出力結果を比較する
+  ** OMP_NUM_THREADS=1/2/4/8など:OpenMPスレッド数
+  ** HWPC_CHOOSER=FLOPS/BANDWIDTH/など:HWPC測定のタイプ
+
+`$ vi x.run-intel-serial.sh`
+`$ bsub < ./x.run-intel-serial.sh`
+
+<<22,←>><<24,→>>
+
+[#24]
+== FX100
+
+[.text-center]
+10分+でできるPMlibのインストールと利用😚
+[.text-center]
+FX100・京コンピュータ編
+
+<<23,←>><<25,→>>
+
+[#25]
+== PMlibのインストールと利用実行
+
+* PMlibのインストール
+  ** PMlibパッケージの入手
+  ** PMlibのインストール
+
+* PMlibの利用実行
+  ** 例題プログラムの作成(C++言語で作成)
+  ** 例題プログラムへのPMlibの追加(ソースプログラムの編集)
+  ** 例題プログラムをコンパイルしてPMlibをリンクする
+  ** 例題プログラムを実行して、PMlibのレポートを確認する
+
+* (注)この説明資料ではPMlibのインストール・例題プログラムのコンパイルはログインノード上で行い、例題プログラムの実行は計算ノード上で行われることを前提としている。
+
+<<24,←>><<26,→>>
+
+[#26]
+== PMlibパッケージの入手(共通)
+
+* パッケージ公開リポジトリ
+  **  http://avr-aics-riken.github.io/PMlib/
+
+image::download.png[ソフトウェアをダウンロードするためのGitHubページを示す画像]
+
+* ダウンロードしたファイル名は avr-aics-riken-PMlib-*.tar.gz
+  ** (\*の部分はバージョンにより変わる)
+* ダウンロードしたファイルをインストール先のコンピュータに転送する。手持ちのPCへインストールする場合は、もちろん転送不要。
+  ** 以降の例では ${HOME}/tmp/ 下に転送したと仮定
+
+<<25,←>><<27,→>>
+
+[#27]
+== PMlibパッケージの展開(共通)
+
+* インストール先のコンピュータ上で、転送したパッケージを展開する
+* 展開したディレクトリにシンボリックリンクと、パスの環境変数を設定する。
+* 以下の例ではログイン後ホームに pmlib ディレクトリを作って、その下に転送したパッケージのファイルを展開する。
+
+[source,bash]
+----
+$ mkdir pmlib
+$ cd pmlib
+$ tar –zxf ${HOME}/tmp/avr-aics-riken-PMlib-*.tar.gz
+$ ls –go
+drwxr-xr-x 10 4096 2016-06-21 15:13 avr-aics-riken-PMlib-7d4884d
+$ ln –s avr-aics-riken-PMlib-* PMlib
+$ ls –go
+lrwxrwxrwx 1 12 2016-06-21 15:15 PMlib -> avr-aics-riken-PMlib-7d4884d
+$ PMLIB_DIR=${PWD}/PMlib          # PMlibパッケージを展開したディレクトリ   
+$ INSTALL_DIR=${PWD}/install_dir  # PMlibのインストール先ディレクトリ
+$ export PMLIB_DIR INSTALL_DIR
+----
+
+<<26,←>><<28,→>>
+
+[#28]
+== PMlibのインストール FX100・京コンピュータ
+
+* FX100・京コンピュータ用のインストールスクリプトは共通で、以下に例が提供されている
+
+`$ SCRIPTS=${PMLIB_DIR}/doc/scripts/K/`
+
+* アプリケーションの種類により、PMlib「1プロセス版」か「MPI版」かのどちらかを使用するので、両方ともインストールする。
+* 「1プロセス版」PMlibをインストールするスクリプト
+  ** ${SCRIPTS}/x.make-pmlib-K-serial.sh
+* 「MPI版」PMlibをインストールするスクリプト
+  ** ${SCRIPTS}/x.make-pmlib-K-impi.sh
+
+<<27,←>><<29,→>>
+
+
+[#29]
+== PMlibのインストール FX100・京コンピュータ
+
+* ログインノード上でインストールスクリプトを2つ順に実行
+
+[source,bash]
+----
+$ ${SCRIPTS}/x.make-pmlib-K-serial.sh   # 「1プロセス版」のインストール
+$ ${SCRIPTS}/x.make-pmlib-K-mpi.sh      # 「MPI版」のインストール
+----
+
+* 以下のファイルがインストールされた事を確認する
+
+[source,bash]
+----
+$ ls –go ${INSTALL_DIR}
+drwxr-xr-x 3 102 6 19 17:51 bin
+drwxr-xr-x 6 204 6 19 17:51 doc
+drwxr-xr-x 7 238 6 19 17:51 include
+drwxr-xr-x 4 136 6 19 17:51 lib
+drwxr-xr-x 7 238 6 19 17:51 share
+$ ls –go ${INSTALL_DIR}/lib
+-rw-r--r-- 1 145784 5 27 17:15 libPM.a         #「1プロセス版」PMlibライブラリ
+-rw-r--r-- 1 472104 6 19 17:51 libPMmpi.a      #「MPI版」PMlibライブラリ
+----
+
+*  以上でPMlibインストール終了!
+
+<<28,←>><<30,→>>
+
+[#30]
+== 例題プログラムの作成(Cpp版)
+
+
+* 適当なディレクトリ ${MY_SRC} の下にプログラム mxm.cpp を作成する
+* N次の正方行列の積を計算するプログラム
+  ** 主プログラム:関数1と関数2を呼び出して行列積の計算を行う。
+  ** 関数1:正方行列[A]、[B]の各要素を値1.0で初期化する
+  ** 関数2:行列積[C]=[A][B]を計算する
+  ** シリアルプログラム(MPI不要、OpenMP不要)
+
+[source,bash]
+----
+$ MY_SRC=${HOME}/pmlib/mysrc
+$ mkdir -p ${MY_SRC}
+$ cd ${MY_SRC}
+----
+
+* 自分でソースを書いてももちろん良い vi mxm.cpp
+* 手早く進みたい場合はパッケージのプログラム例をコピーしても良い
+
+`$ vi mxm.cpp`
+あるいは
+`$ cp –p ${PMLIB_DIR}/doc/src_tutorial/mxm.cpp ./`
+
+<<29,←>><<31,→>>
+
+[#31]
+== 行列積ソースプログラム例 Cpp
+
+|===
+| |
+
+a|
+[source,cpp]
+----
+#include <stdio.h>
+#include <string.h>
+#include "matrix.h"
+void init2d();
+void mxm2d();
+/* 主プログラム部分 */
+int main()
+{
+  init2d();
+  mxm2d();
+  return 0;
+}
+
+void init2d()
+{
+  int i, j, nsize;
+  matrix.nsize = MATSIZE;
+  nsize = matrix.nsize;
+  for (i=0; i<nsize; ipp){
+    for (j=0; j<nsize; jpp){
+      matrix.a2d[i][j] = (double)(i+j)/(double)nsize;
+      matrix.b2d[i][j] = 1.0-matrix.a2d[i][j];
+      matrix.c2d[i][j] = 0.0;
+    }
+  }
+}
+----
+
+a|
+[source,cpp]
+----
+void mxm2d()
+{
+  int i, j, k, nsize;
+  double c1;
+  nsize = matrix.nsize;
+  for (i=0; i<nsize; ipp){
+    for (j=0; j<nsize; jpp){
+      c1 = 0.0;
+      for (k=0; k<nsize; kpp){
+        c1 = c1 +
+        matrix.a2d[k][i] * matrix.b2d[j][k];
+      }
+    matrix.c2d[j][i] = c1;
+    }
+  }
+}
+----
+
+ヘッダーファイル matrix.h の内容
+[source,cpp]
+----
+#define MATSIZE 1000
+struct matrix {
+  double a2d[MATSIZE][MATSIZE];
+  double b2d[MATSIZE][MATSIZE];
+  double c2d[MATSIZE][MATSIZE];
+  int nsize;
+} matrix;
+----
+|===
+
+<<30,←>><<32,→>>
+
+[#32]
+== 例題プログラムへのPMlibの追加
+
+|===
+|  元の主プログラム部分 | PMlibを追加した主プログラム部分
+
+a|
+[source,cpp]
+----
+/* ヘッダー */
+
+int main()
+{
+
+/* 初期設定 */
+
+/* 測定区間1 */
+init2d();
+
+
+/* 測定区間2 */
+mxm2d();
+
+
+
+
+/* レポートを出力 */
+
+
+return 0;
+----
+
+a|
+[source,cpp]
+----
+/* ヘッダー追加 */
+#include <PerfMonitor.h>
+using namespace pm_lib;
+PerfMonitor PM;
+int main()
+{
+PM.initialize();
+/* 初期設定 */
+PM.setProperties("A:init2d", PM.CALC);
+PM.setProperties("B:mxm2d", PM.CALC);
+/* 測定区間1 */
+PM.start("A:init2d");
+init2d();
+PM.stop("A:init2d");
+/* 測定区間2 */
+PM.start("B:mxm2d");
+mxm2d();
+PM.stop ("B:mxm2d");
+/* レポートを出力 */
+PM.print(stdout, "", "");
+PM.printDetail(stdout);
+return 0;
+}
+----
+|===
+
+<<31,←>><<33,→>>
+
+[#33]
+== コンパイル FX100・京コンピュータ
+
+* 例題プログラムをコンパイルしてPMlibをリンクするスクリプト例
+  ** x.compile-cpp-K-serial.sh
+  ** コンパイルを開始する前にスクリプトの内容を確認する
+  ** コンパイルが終了すると実行プログラム a.out が生成される
+
+[source,bash]
+----
+$ ${SCRIPTS}/x.compile-cpp-K-serial.sh
+$ file ./a.out
+./a.out: ELF 64-bit MSB executable, SPARC V9, total store ordering, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.12, not stripped
+----
+
+<<32,←>><<34,→>>
+
+[#34]
+== 例題プログラムの実行 FX100・京コンピュータ
+
+* 対話的ジョブセッションの開始
+  ** 京やFX100などはバッチジョブ管理されているので、#計算ノード#1台を利
+用する対話的ジョブセッションを起動する。
+  ** FX100ではシステム毎にpjsub のオプションが異なる。適宜対応。
+
+[source,bash]
+----
+$ pjsub --interact --rsc-list "elapse=01:00:00" --rsc-list "node=1" --mpi "proc=8"
+[INFO] PJM 0000 pjsub Job 2955440 submitted.
+[INFO] PJM 0081 ....connected.
+[INFO] PJM 0082 pjsub Interactive job 2955440 started.
+----
+
+* 計算ノード上で対話的ジョブセッションが始まったら、最初に環境設定を行う
+  ** FX100ではシステム毎に環境設定方法が異なることがある。適宜対応。
+
+[source,bash]
+----
+$ source /work/system/Env_base  # 京の場合
+$ /opt/FJSVXosPA/bin/xospastop  # 京の場合
+$ MY_SRC=${HOME}/pmlib/mysrc
+$ cd ${MY_SRC}
+----
+
+<<33,←>><<35,→>>
+
+[#35]
+== 例題プログラムの実行 FX100・京コンピュータ
+
+* 計算ノード上でプログラムを実行する。
+  ** デフォルトではユーザー申告モードで測定される
+  ** 標準出力に基本レポート・詳細レポートが出力される事を確認
+
+`./a.out`
+
+* 環境変数HWPC_CHOOSERにFLOPSを指定して再度実行する
+  ** HWPCによる自動測定モード(計算量の自動測定)
+  ** 基本レポート・詳細レポートを確認
+
+[source,bash]
+----
+$ export HWPC_CHOOSER=FLOPS
+$ ./a.out
+----
+
+<<34,←>><<36,→>>
+
+[#36]
+== 例題プログラムへのOpenMP指示行の追加
+
+*  ソースプログラムにOpenMP指示行を追加
+
+|===
+| |
+
+a|
+[source,cpp]
+----
+void init2d()
+{
+  int i, j, nsize;
+  matrix.nsize = MATSIZE;
+  nsize = matrix.nsize;
+  #pragma omp parallel for private(i,j)
+  for (i=0; i<nsize; ipp){
+    for (j=0; j<nsize; jpp){
+      matrix.a2d[i][j] = (double)(i+j)/(double)nsize;
+      matrix.b2d[i][j] = 1.0-matrix.a2d[i][j];
+      matrix.c2d[i][j] = 0.0;
+    }
+  }
+}
+----
+
+a|
+[source,cpp]
+----
+void mxm2d()
+{
+  int i, j, k, nsize;
+  double c1;
+  nsize = matrix.nsize;
+  #pragma omp parallel for private(i,j,k,c1)
+  for (i=0; i<nsize; ipp){
+    for (j=0; j<nsize; jpp){
+      c1 = 0.0;
+      for (k=0; k<nsize; kpp){
+        c1 = c1 +
+        matrix.a2d[k][i] * matrix.b2d[j][k];
+      }
+      ...以下略...
+----
+|===
+
+<<35,←>><<37,→>>
+
+[#37]
+== 例題プログラムの再実行 FX100・京コンピュータ
+
+* ログインノード上で再度コンパイル
+
+`$ ${SCRIPTS}/x.compile-app-K-serial.sh`
+
+* #計算ノード上で#対話的ジョブセッションを継続・再開
+  ** もし先に開始したジョブセッションが終了していればジョブの再投入と環
+境設定を再実施
+  ** 測定条件(環境変数)を追加・変更して出力結果を比較する
+    *** OMP_NUM_THREADS=1/2/4/8など:OpenMPスレッド数
+    *** HWPC_CHOOSER=FLOPS/BANDWIDTH/など:HWPC測定のタイプ
+
+[source,bash]
+----
+$ export HWPC_CHOOSER=FLOPS
+$ export OMP_NUM_THREADS=4
+$ ./a.out
+----
+
+<<36,←>><<38,→>>
+
+[#38]
+== Apple Mac
+
+[.text-center]
+10分+でできるPMlibのインストールと利用😚
+[.text-center]
+Apple Mac編
+[.text-center]
+(OSX10.11以降)
+
+<<37,←>><<39,→>>
+
+[#39]
+== PMlibのインストールと利用実行
+
+* PMlibのインストール
+  ** PMlibパッケージの入手
+  ** PMlibのインストール
+
+* PMlibの利用実行
+  ** 例題プログラムの作成(Cpp言語で作成)
+  ** 例題プログラムへのPMlibの追加(ソースプログラムの編集)
+  ** 例題プログラムをコンパイルしてPMlibをリンクする
+  ** 例題プログラムを実行して、PMlibのレポートを確認する
+
+* (注)Apple Mac環境ではCコンパイラ(Clang)は標準で備わっているがFortranコンパイラ、MPIライブラリは通常利用者がインストールする。この説明資料ではCコンパイラは標準のclang、FortranコンパイラはGNUFortran(gfortran:GNU Cに付属)、MPIはOpenMPIがインストールされていることを前提として書かれている。
+* (注)Apple Mac環境ではHWPC/PAPIライブラリはサポートされていない。
+
+<<38,←>><<40,→>>
+
+[#40]
+== PMlibパッケージの入手(共通)
+
+* パッケージ公開リポジトリ
+  ** http://avr-aics-riken.github.io/PMlib/
+
+image::download.png[ソフトウェアをダウンロードするためのGitHubページを示す画像]
+
+* ダウンロードしたファイル名は avr-aics-riken-PMlib-*.tar.gz
+  ** (\*の部分はバージョンにより変わる)
+* ダウンロードしたファイルをインストール先のコンピュータに転送する。手持ちのPCへインストールする場合は、もちろん転送不要。
+  ** 以降の例では ${HOME}/tmp/ 下に転送したと仮定
+
+<<39,←>><<41,→>>
+
+[#41]
+== PMlibパッケージの展開(共通)
+
+* インストール先のコンピュータ上で、転送したパッケージを展開する
+* 展開したディレクトリにシンボリックリンクと、パスの環境変数を設定する。
+* 以下の例ではログイン後ホームに pmlib ディレクトリを作って、その下に 転送したパッケージのファイルを展開する。
+
+[source,bash]
+----
+$ mkdir pmlib
+$ cd pmlib
+$ tar –zxf ${HOME}/tmp/avr-aics-riken-PMlib-*.tar.gz
+$ ls –go
+drwxr-xr-x 10 4096 2016-06-21 15:13 avr-aics-riken-PMlib-7d4884d
+$ ln –s avr-aics-riken-PMlib-* PMlib
+$ ls –go
+lrwxrwxrwx 1 12 2016-06-21 15:15 PMlib -> avr-aics-riken-PMlib-7d4884d
+$ PMLIB_DIR=${PWD}/PMlib          # PMlibパッケージを展開したディレクトリ
+$ INSTALL_DIR=${PWD}/install_dir  # PMlibのインストール先ディレクトリ
+$ export PMLIB_DIR INSTALL_DIR
+----
+
+<<40,←>><<42,→>>
+
+[#42]
+== PMlibのインストール Apple Mac環境
+
+* Apple Mac環境用のインストールスクリプト例は以下に提供されている
+
+`$ SCRIPTS=${PMLIB_DIR}/doc/scripts/Mac/`
+
+* アプリケーションの種類により、PMlib「1プロセス版」か「MPI版」かのどちらかを使用するので、両方ともインストールする。
+* 「1プロセス版」のスクリプト ${SCRIPTS}/x.make-mac-clang-serial.sh
+* 「MPI版」のスクリプト ${SCRIPTS}/x.make-mac-clang-openmpi.sh
+* 「MPI版」のスクリプトではOpenMPIがインストールされたパスが正しく設定されているか確認して、必要であれば修正する。
+
+`export OPENMPI_DIR=/usr/local/openmpi/openmpi-1.10.2-clang`
+
+<<41,←>><<43,→>>
+
+[#43]
+== PMlibのインストール Apple Mac環境
+
+* インストールスクリプトを2つ順に実行
+[source,bash]
+----
+$ ${SCRIPTS}/x.make-mac-clang-serial.sh # 「1プロセス版」PMlib
+$ ${SCRIPTS}/x.make-mac-clang-openmpi.sh # 「MPI版」PMlib
+----
+* 以下のファイルがインストールされた事を確認する
+
+[source,bash]
+----
+$ ls –go ${INSTALL_DIR}
+drwxr-xr-x 3 102 6 19 17:51 bin
+drwxr-xr-x 6 204 6 19 17:51 doc
+drwxr-xr-x 7 238 6 19 17:51 include
+drwxr-xr-x 4 136 6 19 17:51 lib
+drwxr-xr-x 7 238 6 19 17:51 share
+$ ls –go ${INSTALL_DIR}/lib
+-rw-r--r-- 1 145784 5 27 17:15 libPM.a     # 「1プロセス版」PMlibライブラリ
+-rw-r--r-- 1 472104 6 19 17:51 libPMmpi.a  # 「MPI版」PMlibライブラリ
+----
+
+*  以上でPMlibインストール終了!
+
+<<42,←>><<44,→>>
+
+[#44]
+== 例題プログラムの作成(Cpp版)
+
+* 適当なディレクトリ ${MY_SRC} の下にプログラム mxm.cpp を作成する
+* N次の正方行列の積を計算するプログラム
+  ** 主プログラム:関数1と関数2を呼び出して行列積の計算を行う。
+  ** 関数1:正方行列[A]、[B]の各要素を値1.0で初期化する
+  ** 関数2:行列積[C]=[A][B]を計算する
+  ** シリアルプログラム(MPI不要、OpenMP不要)
+
+[source,bash]
+----
+$ MY_SRC=${HOME}/pmlib/mysrc
+$ mkdir -p ${MY_SRC}
+$ cd ${MY_SRC}
+----
+
+*  自分でソースを書いてももちろん良い vi mxm.cpp
+
+*  手早く進みたい場合はパッケージのプログラム例をコピーしても良い
+
+`$ vi mxm.cpp`
+あるいは
+`$ cp –p ${PMLIB_DIR}/doc/src_tutorial/mxm.cpp ./`
+
+<<43,←>><<45,→>>
+
+[#45]
+== 行列積ソースプログラム例 Cpp
+
+|===
+| |
+
+a|
+[source,cpp]
+----
+#include <stdio.h>
+#include <string.h>
+#include "matrix.h"
+void init2d();
+void mxm2d();
+/* 主プログラム部分 */
+int main()
+{
+  init2d();
+  mxm2d();
+  return 0;
+}
+
+void init2d()
+{
+  int i, j, nsize;
+  matrix.nsize = MATSIZE;
+  nsize = matrix.nsize;
+  for (i=0; i<nsize; ipp){
+    for (j=0; j<nsize; jpp){
+      matrix.a2d[i][j] = (double)(i+j)/(double)nsize;
+      matrix.b2d[i][j] = 1.0-matrix.a2d[i][j];
+      matrix.c2d[i][j] = 0.0;
+    }
+  }
+}
+----
+
+a|
+[source,cpp]
+----
+void mxm2d()
+{
+  int i, j, k, nsize;
+  double c1;
+  nsize = matrix.nsize;
+  for (i=0; i<nsize; i++){
+    for (j=0; j<nsize; j++){
+      c1 = 0.0;
+      for (k=0; k<nsize; k++){
+        c1 = c1 +
+        matrix.a2d[k][i] * matrix.b2d[j][k];
+      }
+      matrix.c2d[j][i] = c1;
+    }
+  }
+}
+----
+
+ヘッダーファイル matrix.h の内容
+[source,cpp]
+----
+#define MATSIZE 1000
+struct matrix {
+  double a2d[MATSIZE][MATSIZE];
+  double b2d[MATSIZE][MATSIZE];
+  double c2d[MATSIZE][MATSIZE];
+  int nsize;
+} matrix;
+----
+|===
+
+<<44,←>><<46,→>>
+
+[#46]
+== 例題プログラムへのPMlibの追加
+
+|===
+| 元の主プログラム部分 | PMlibを追加した主プログラム部分
+
+a|
+[source,cpp]
+----
+/* ヘッダー */
+
+
+int main()
+{
+/* 初期設定 */
+
+
+/* 測定区間1 */
+init2d();
+
+
+/* 測定区間2 */
+mxm2d();
+
+
+/* レポートを出力 */
+
+
+return 0;
+}
+----
+
+a|
+[source,cpp]
+----
+/* ヘッダー追加 */
+#include <PerfMonitor.h>
+using namespace pm_lib;
+PerfMonitor PM;
+int main();
+{
+PM.initialize;
+/* 初期設定 */
+PM.setProperties("A:init2d", PM.CALC);
+PM.setProperties("B:mxm2d", PM.CALC);
+/* 測定区間1 */
+PM.start("A:init2d");
+init2d();
+PM.stop("A:init2d");
+/* 測定区間2 */
+PM.start("B:mxm2d");
+mxm2d();
+PM.stop("B:mxm2d");
+/* レポートを出力 */
+PM.print(stdout,"","");
+PM.printDetail(stdout);
+return 0;
+}
+----
+|===
+
+<<45,←>><<47,→>>
+
+[#47]
+== コンパイル clangコンパイラ
+
+* 例題プログラムをコンパイルしてPMlibをリンクするスクリプト例
+  ** x.compile-cpp-mac-serial.sh
+  ** コンパイルを開始する前にスクリプトの内容を確認する
+  ** コンパイルが終了すると実行プログラム a.out が生成される
+
+[source,bash]
+----
+$ ${SCRIPTS}/x.compile-cpp-mac-serial.sh
+
+$ file ./a.out
+./a.out: Mach-O 64-bit executable x86_64
+----
+
+<<46,←>><<48,→>>
+
+[#48]
+== 例題プログラムの実行 clangコンパイラ
+
+* 例:ジョブスクリプトによる実行例。
+
+[source,bash]
+----
+$ cp ${SCRIPTS}/x.run-mac-serial.sh ./
+$ vi x.run-mac-serial.sh
+$ ./x.run-mac-serial.sh
+----
+
+* 実行結果の標準出力でPMlibの基本レポート・詳細レポートを確認
+
+<<47,←>><<49,→>>
+
+[#49]
+== 例題プログラムへのOpenMP指示行の追加
+
+* ソースプログラムにOpenMP指示行を追加
+
+|===
+| |
+
+a|
+[source,cpp]
+----
+void init2d()
+{
+  int i, j, nsize;
+  matrix.nsize = MATSIZE;
+  nsize = matrix.nsize;
+  #pragma omp parallel for private(i,j)
+  for (i=0; i<nsize; ipp){
+    for (j=0; j<nsize; jpp){
+      matrix.a2d[i][j] = (double)(i+j)/(double)nsize;
+      matrix.b2d[i][j] = 1.0-matrix.a2d[i][j];
+      matrix.c2d[i][j] = 0.0;
+    }
+  }
+}
+----
+
+a|
+[source,cpp]
+----
+void mxm2d()
+{
+  int i, j, k, nsize;
+  double c1;
+  nsize = matrix.nsize;
+  #pragma omp parallel for private(i,j,k,c1)
+  for (i=0; i<nsize; ipp){
+    for (j=0; j<nsize; jpp){
+      c1 = 0.0;
+      for (k=0; k<nsize; kpp){
+        c1 = c1 +
+        matrix.a2d[k][i] * matrix.b2d[j][k];
+      }
+      ...以下略...
+----
+|===
+
+<<48,←>><<50,→>>
+
+[#50]
+== 例題プログラムのコンパイルと実行 Apple Mac環境
+
+* 再コンパイル
+`$ ${SCRIPTS}/x.compile-cpp-mac-serial.sh`
+
+* 環境変数を追加・変更して再実行
+** ジョブスクリプトで測定条件を変更して出力結果を比較する
+** OMP_NUM_THREADS=1/2/4/8など:OpenMPスレッド数
+
+[source,bash]
+----
+$ vi x.run-mac-serial.sh
+$ ./x.run-mac-serial.sh
+----
+
+<<49,←>><<51,→>>
+
+[#51]
+== 以上です。
+
+* PMlibの基本的な機能と利用方法についてご紹介しました。
+* さらに詳細な機能やその利用方法について知りたい方は、PMlibパッケージの以下の資料をご覧ください。
+
+
+|===
+|
+doc/PMlib.pdf
+
+doc/tutorial/Tutorial-slide1-overview.pdf
+
+doc/tutorial/Tutorial-slide2-installation.pdf
+
+doc/tutorial/PMlib-Getting-Started.pdf
+
+|
+PMlib利用説明書
+
+講習会用資料1
+
+講習会用資料2
+
+簡易版利用ガイド(本資料)
+|===
+
+<<50,←>><<1,↑>>
+
